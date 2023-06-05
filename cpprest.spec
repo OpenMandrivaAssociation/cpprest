@@ -78,7 +78,7 @@ rm -r Release/libs
 rm ThirdPartyNotices.txt
 
 %build
-ecport LDFLAGS="%{ldflags} -Wl,--as-needed"
+export LDFLAGS="%{ldflags} -Wl,--as-needed"
 # FIXME: clang falis dut to zblib
 export CC=gcc
 export CXX=g++
