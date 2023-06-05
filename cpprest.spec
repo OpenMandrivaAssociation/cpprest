@@ -78,6 +78,10 @@ rm -r Release/libs
 rm ThirdPartyNotices.txt
 
 %build
+# FIXME: clang falis dut to zblib
+export CC=gcc
+export CXX=g++
+
 %cmake \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_INSTALL_PREFIX=%{_prefix} \
