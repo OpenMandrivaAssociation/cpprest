@@ -78,6 +78,7 @@ rm -r Release/libs
 rm ThirdPartyNotices.txt
 
 %build
+ecport LDFLAGS="%{ldflags} -Wl,--as-needed"
 # FIXME: clang falis dut to zblib
 export CC=gcc
 export CXX=g++
@@ -91,7 +92,7 @@ export CXX=g++
 %ninja_build
 
 %install
-%ninja_install
+%ninja_install -C build
 
 # pkgconfig file
 install -d %{buildroot}%{_libdir}/pkgconfig
