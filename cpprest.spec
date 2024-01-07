@@ -9,8 +9,8 @@ Version:	2.10.18
 Release:	1
 License:	MIT
 Group:		System/Libraries
-URL:		https://github.com/Microsoft/cpprestsdk
-Source0:	https://github.com/Microsoft/cpprestsdk/archive/%{version}/cpprestsdk-%{version}.tar.gz
+URL:		https://github.com/microsoft/cpprestsdk
+Source0:	https://github.com/microsoft/cpprestsdk/archive/refs/tags/v%{version}/cpprestsdk-%{version}.tar.gz
 BuildRequires:	cmake
 BuildRequires:	ninja
 BuildRequires:	boost-devel
