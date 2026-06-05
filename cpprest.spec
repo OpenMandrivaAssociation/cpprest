@@ -6,7 +6,7 @@
 Summary:	C++ REST library
 Name:		cpprest
 Version:	2.10.19
-Release:	1
+Release:	2
 License:	MIT
 Group:		System/Libraries
 URL:		https://github.com/microsoft/cpprestsdk
