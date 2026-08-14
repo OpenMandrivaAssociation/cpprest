@@ -73,6 +73,15 @@ Header files for development with %{name}.
 
 %prep
 %autosetup -p1 -n cpprestsdk-%{version}
+# Boost.Asio 1.87+ removed resolver::query and socket_base::max_connections
+sed -i 's/socket_base::max_connections/socket_base::max_listen_connections/g' \
+	Release/src/http/listener/http_server_asio.cpp
+sed -i '/tcp::resolver::query query =/,/tcp::endpoint endpoint = \*resolver.resolve(query);/c\
+    auto results = ("+" == m_host)\
+        ? resolver.resolve(tcp::v4(), m_port)\
+        : resolver.resolve(m_host, m_port);\
+    tcp::endpoint endpoint = *results.begin();' \
+	Release/src/http/listener/http_server_asio.cpp
 
 # Remove bundled sources of websocketpp
 rm -r Release/libs
