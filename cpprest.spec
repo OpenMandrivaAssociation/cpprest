@@ -14,6 +14,7 @@ Source0:	https://github.com/microsoft/cpprestsdk/archive/refs/tags/v%{version}/c
 Patch0:		cpprest-boost-asio-1.92.patch
 BuildRequires:	cmake
 BuildRequires:	ninja
+BuildRequires:	atomic-devel
 BuildRequires:	boost-devel
 BuildRequires:	cmake(websocketpp)
 BuildRequires:	pkgconfig(libbrotlidec)
