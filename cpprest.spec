@@ -78,11 +78,6 @@ rm -r Release/libs
 rm ThirdPartyNotices.txt
 
 %build
-export LDFLAGS="%{ldflags} -Wl,--as-needed"
-# FIXME: clang falis dut to zblib
-export CC=gcc
-export CXX=g++
-
 %cmake \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_INSTALL_PREFIX=%{_prefix} \
