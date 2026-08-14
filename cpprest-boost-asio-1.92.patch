@@ -1,0 +1,177 @@
+--- a/Release/include/pplx/threadpool.h
++++ b/Release/include/pplx/threadpool.h
+@@ -69,15 +69,15 @@
+     CASABLANCA_DEPRECATED("Use `.service().post(task)` directly.")
+     void schedule(T task)
+     {
+-        service().post(task);
++        boost::asio::post(service(), task);
+     }
+ 
+-    boost::asio::io_service& service() { return m_service; }
++    boost::asio::io_context& service() { return m_service; }
+ 
+ protected:
+     threadpool(size_t num_threads) : m_service(static_cast<int>(num_threads)) {}
+ 
+-    boost::asio::io_service m_service;
++    boost::asio::io_context m_service;
+ };
+ 
+ } // namespace crossplat
+--- a/Release/src/http/client/http_client_asio.cpp
++++ b/Release/src/http/client/http_client_asio.cpp
+@@ -146,7 +146,7 @@
+     friend class asio_client;
+ 
+ public:
+-    asio_connection(boost::asio::io_service& io_service)
++    asio_connection(boost::asio::io_context& io_service)
+         : m_socket_lock()
+         , m_socket(io_service)
+         , m_ssl_stream()
+@@ -1182,8 +1182,8 @@
+ 
+         const auto& chunkSize = m_http_client->client_config().chunksize();
+         auto readbuf = _get_readbuffer();
+-        uint8_t* buf = boost::asio::buffer_cast<uint8_t*>(
+-            m_body_buf.prepare(chunkSize + http::details::chunked_encoding::additional_encoding_space));
++        uint8_t* buf = static_cast<uint8_t*>(
++            m_body_buf.prepare(chunkSize + http::details::chunked_encoding::additional_encoding_space).data());
+         const auto this_request = shared_from_this();
+         readbuf.getn(buf + http::details::chunked_encoding::data_offset, chunkSize)
+             .then([this_request, buf, chunkSize AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op) {
+@@ -1247,7 +1247,7 @@
+         const auto readSize = static_cast<size_t>((std::min)(
+             static_cast<uint64_t>(m_http_client->client_config().chunksize()), m_content_length - m_uploaded));
+         auto readbuf = _get_readbuffer();
+-        readbuf.getn(boost::asio::buffer_cast<uint8_t*>(m_body_buf.prepare(readSize)), readSize)
++        readbuf.getn(static_cast<uint8_t*>(m_body_buf.prepare(readSize).data()), readSize)
+             .then([this_request AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op) {
+                 try
+                 {
+@@ -1639,7 +1639,7 @@
+                     std::vector<uint8_t> decompressed;
+ 
+                     bool boo =
+-                        decompress(boost::asio::buffer_cast<const uint8_t*>(m_body_buf.data()), to_read, decompressed);
++                        decompress(static_cast<const uint8_t*>(m_body_buf.data().data()), to_read, decompressed);
+                     if (!boo)
+                     {
+                         report_exception(std::runtime_error("Failed to decompress the response body"));
+@@ -1687,7 +1687,7 @@
+                 }
+                 else
+                 {
+-                    writeBuffer.putn_nocopy(boost::asio::buffer_cast<const uint8_t*>(m_body_buf.data()), to_read)
++                    writeBuffer.putn_nocopy(static_cast<const uint8_t*>(m_body_buf.data().data()), to_read)
+                         .then([this_request, to_read AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op) {
+                             try
+                             {
+@@ -1759,7 +1759,7 @@
+                 std::vector<uint8_t> decompressed;
+ 
+                 bool boo =
+-                    decompress(boost::asio::buffer_cast<const uint8_t*>(m_body_buf.data()), read_size, decompressed);
++                    decompress(static_cast<const uint8_t*>(m_body_buf.data().data()), read_size, decompressed);
+                 if (!boo)
+                 {
+                     this_request->report_exception(std::runtime_error("Failed to decompress the response body"));
+@@ -1821,7 +1821,7 @@
+             }
+             else
+             {
+-                writeBuffer.putn_nocopy(boost::asio::buffer_cast<const uint8_t*>(m_body_buf.data()), read_size)
++                writeBuffer.putn_nocopy(static_cast<const uint8_t*>(m_body_buf.data().data()), read_size)
+                     .then([this_request AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op) {
+                         size_t writtenSize = 0;
+                         try
+--- a/Release/src/http/listener/http_server_asio.cpp
++++ b/Release/src/http/listener/http_server_asio.cpp
+@@ -881,7 +881,7 @@
+     else
+     {
+         auto writebuf = requestImpl->outstream().streambuf();
+-        writebuf.putn_nocopy(buffer_cast<const uint8_t*>(m_request_buf.data()), toWrite)
++        writebuf.putn_nocopy(static_cast<const uint8_t*>(m_request_buf.data().data()), toWrite)
+             .then([=](pplx::task<size_t> writeChunkTask) -> will_deref_t {
+                 try
+                 {
+@@ -913,7 +913,7 @@
+     {
+         auto writebuf = requestImpl->outstream().streambuf();
+         writebuf
+-            .putn_nocopy(boost::asio::buffer_cast<const uint8_t*>(m_request_buf.data()),
++            .putn_nocopy(static_cast<const uint8_t*>(m_request_buf.data().data()),
+                          (std::min)(m_request_buf.size(), m_read_size - m_read))
+             .then([this](pplx::task<size_t> writtenSizeTask) -> will_deref_t {
+                 size_t writtenSize = 0;
+@@ -1134,7 +1134,7 @@
+     }
+     auto membuf = m_response_buf.prepare(ChunkSize + chunked_encoding::additional_encoding_space);
+ 
+-    readbuf.getn(buffer_cast<uint8_t*>(membuf) + chunked_encoding::data_offset, ChunkSize)
++    readbuf.getn(static_cast<uint8_t*>(membuf.data()) + chunked_encoding::data_offset, ChunkSize)
+         .then([=](pplx::task<size_t> actualSizeTask) -> will_deref_and_erase_t {
+             size_t actualSize = 0;
+             try
+@@ -1146,7 +1146,7 @@
+                 return cancel_sending_response_with_error(response, std::current_exception());
+             }
+             size_t offset = chunked_encoding::add_chunked_delimiters(
+-                buffer_cast<uint8_t*>(membuf), ChunkSize + chunked_encoding::additional_encoding_space, actualSize);
++                static_cast<uint8_t*>(membuf.data()), ChunkSize + chunked_encoding::additional_encoding_space, actualSize);
+             m_response_buf.commit(actualSize + chunked_encoding::additional_encoding_space);
+             m_response_buf.consume(offset);
+             if (actualSize == 0)
+@@ -1167,7 +1167,7 @@
+         return cancel_sending_response_with_error(
+             response, std::make_exception_ptr(http_exception("Response stream close early!")));
+     size_t readBytes = (std::min)(ChunkSize, m_write_size - m_write);
+-    readbuf.getn(buffer_cast<uint8_t*>(m_response_buf.prepare(readBytes)), readBytes)
++    readbuf.getn(static_cast<uint8_t*>(m_response_buf.prepare(readBytes).data()), readBytes)
+         .then([=](pplx::task<size_t> actualSizeTask) -> will_deref_and_erase_t {
+             size_t actualSize = 0;
+             try
+--- a/Release/src/pplx/pplxlinux.cpp
++++ b/Release/src/pplx/pplxlinux.cpp
+@@ -35,7 +35,7 @@
+ 
+ _PPLXIMP void linux_scheduler::schedule(TaskProc_t proc, void* param)
+ {
+-    crossplat::threadpool::shared_instance().service().post(boost::bind(proc, param));
++    boost::asio::post(crossplat::threadpool::shared_instance().service(), boost::bind(proc, param));
+ }
+ 
+ } // namespace details
+--- a/Release/src/pplx/threadpool.cpp
++++ b/Release/src/pplx/threadpool.cpp
+@@ -37,7 +37,7 @@
+ 
+ struct threadpool_impl final : crossplat::threadpool
+ {
+-    threadpool_impl(size_t n) : crossplat::threadpool(n), m_work(m_service)
++    threadpool_impl(size_t n) : crossplat::threadpool(n), m_work(boost::asio::make_work_guard(m_service))
+     {
+         for (size_t i = 0; i < n; i++)
+             add_thread();
+@@ -84,7 +84,7 @@
+     }
+ 
+     std::vector<std::unique_ptr<boost::asio::detail::thread>> m_threads;
+-    boost::asio::io_service::work m_work;
++    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work;
+ };
+ 
+ #if defined(_WIN32)
+--- a/Release/tests/functional/pplx/pplx_test/pplx_op_test.cpp
++++ b/Release/tests/functional/pplx/pplx_test/pplx_op_test.cpp
+@@ -57,7 +57,7 @@
+     virtual void schedule(pplx::TaskProc_t proc, void* param)
+     {
+         pplx::details::atomic_increment(s_flag);
+-        m_pool->service().post([=]() -> void { proc(param); });
++        boost::asio::post(m_pool->service(), [=]() -> void { proc(param); });
+     }
+ 
+ public:

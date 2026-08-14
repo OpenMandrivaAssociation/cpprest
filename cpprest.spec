@@ -11,6 +11,7 @@ License:	MIT
 Group:		System/Libraries
 URL:		https://github.com/microsoft/cpprestsdk
 Source0:	https://github.com/microsoft/cpprestsdk/archive/refs/tags/v%{version}/cpprestsdk-%{version}.tar.gz
+Patch0:		cpprest-boost-asio-1.92.patch
 BuildRequires:	cmake
 BuildRequires:	ninja
 BuildRequires:	boost-devel
